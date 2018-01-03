@@ -18,26 +18,19 @@ package com.j2bugzilla.base;
 
 import com.j2bugzilla.rpc.LogIn;
 
-import java.io.IOException;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
+import java.net.Proxy;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-
 import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.XmlRpcRequest;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.apache.xmlrpc.client.XmlRpcClientException;
-import org.apache.xmlrpc.client.XmlRpcSunHttpTransport;
-import org.apache.xmlrpc.client.XmlRpcSunHttpTransportFactory;
-import org.apache.xmlrpc.client.XmlRpcTransport;
-import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 
 /**
@@ -62,7 +55,25 @@ public class BugzillaConnector {
 	 * See {@link com.j2bugzilla.rpc.LogIn#getToken()}
 	 */
 	private String token;
-	
+
+
+	private void initializeProxyAuthenticator() {
+		final String proxyUser = "testuser2";
+		final String proxyPassword = "Passw0rd!";
+
+		if (proxyUser != null && proxyPassword != null) {
+			Authenticator.setDefault(
+					new Authenticator() {
+						public PasswordAuthentication getPasswordAuthentication() {
+							return new PasswordAuthentication(
+									proxyUser, proxyPassword.toCharArray()
+							);
+						}
+					}
+			);
+		}
+	}
+
 	/**
 	 * Use this method to designate a host to connect to. You must call this method 
 	 * before executing any other methods of this object.
@@ -134,21 +145,44 @@ public class BugzillaConnector {
         }
         config.setServerURL(host);
 
+        initializeProxyAuthenticator();
         client = new XmlRpcClient();
         client.setConfig(config);
 
-        /**
-         * Here, we override the default behavior of the transport factory to properly
-         * handle cookies for authentication
-         */
-        XmlRpcTransportFactory factory = new XmlRpcSunHttpTransportFactory(client) {
-        	
-        	private final XmlRpcTransport transport = new TransportWithCookies(client);
-        	
-			public XmlRpcTransport getTransport() {
-				return transport;
-			}
-		};
+//        /**
+//         * Here, we override the default behavior of the transport factory to properly
+//         * handle cookies for authentication
+//         */
+//        XmlRpcTransportFactory factory = new XmlRpcSun15HttpTransportFactory(client) {
+//
+//        	private final XmlRpcTransport transport = new TransportWithCookies(client);
+//
+//			@Override
+//			public XmlRpcTransport getTransport() {
+//				return transport;
+//			}
+//		};
+//		client.setTransportFactory(factory);
+
+
+		/**
+		 * Here, we override the default behavior of the transport factory to properly
+		 * handle cookies for authentication
+		 */
+		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(
+				client
+				, new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8082))
+				, "testuser2", "Passw0rd!"
+				);
+
+//			private XmlRpcProxyAndCookiesTransport transport = new XmlRpcProxyAndCookiesTransport(client);
+//
+//			@Override
+//			public XmlRpcTransport getTransport() {
+//				return transport;
+//			}
+//		};
+//		factory.setProxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8081)));
 		client.setTransportFactory(factory);
 	}
 	
@@ -193,77 +227,80 @@ public class BugzillaConnector {
 		token = t;
 	}
 	
-	/**
-	 * We need a transport class which will correctly handle cookies set by Bugzilla. This private
-	 * subclass will appropriately set the Cookie HTTP headers.
-	 *
-	 * Cookies are not support by Bugzilla 4.4.3+.
-	 *
-	 * @author Tom
-	 *
-	 */
-	private static final class TransportWithCookies extends XmlRpcSunHttpTransport {
-
-		/**
-		 * A {@code List} of cookies received from the installation, used for authentication
-		 */
-		private List<String> cookies = new ArrayList<String>();
-		
-		/**
-		 * Creates a new {@link TransportWithCookies} object.
-		 * @param pClient The {@link XmlRpcClient} that does the heavy lifting.
-		 */
-		public TransportWithCookies(XmlRpcClient pClient) {
-			super(pClient);
-		}
-		
-		private URLConnection conn;
-		
-		protected URLConnection newURLConnection(URL pURL) throws IOException {
-            conn = super.newURLConnection(pURL);
-            return conn;
-		}
-		
-		/**
-		 * This is the meat of these two overrides -- the HTTP header data now includes the 
-		 * cookies received from the Bugzilla installation on login and will pass them every
-		 * time a connection is made to transmit or receive data.
-		 */
-		protected void initHttpHeaders(XmlRpcRequest request) throws XmlRpcClientException {
-	        super.initHttpHeaders(request);
-	        if(cookies.size()>0) {
-	        	StringBuilder commaSep = new StringBuilder();
-	        	
-	        	for(String str : cookies) {
-	        		commaSep.append(str);
-	        		commaSep.append(",");
-	        	}
-	        	setRequestHeader("Cookie", commaSep.toString());
-	        	
-	        }
-	        
-	    }
-		
-		protected void close() throws XmlRpcClientException {
-            getCookies(conn);
-		}
-		
-		/**
-		 * Retrieves cookie values from the HTTP header of Bugzilla responses
-		 * @param conn
-		 */
-		private void getCookies(URLConnection conn) {
-	    	  if(cookies.size()==0) {
-	    		  Map<String, List<String>> headers = conn.getHeaderFields();
-	    		  if(headers.containsKey("Set-Cookie")) {//avoid NPE
-	    			  List<String> vals = headers.get("Set-Cookie");
-			    	  for(String str : vals) {
-			    		  cookies.add(str);
-			    	  }
-	    		  }					    	  
-	    	  }
-	    	  
-	    }
-		
-	}
+//	/**
+//	 * We need a transport class which will correctly handle cookies set by Bugzilla. This private
+//	 * subclass will appropriately set the Cookie HTTP headers.
+//	 *
+//	 * Cookies are not support by Bugzilla 4.4.3+.
+//	 *
+//	 * @author Tom
+//	 *
+//	 */
+//	private static final class TransportWithCookies extends XmlRpcSun15HttpTransport {
+//
+//		/**
+//		 * A {@code List} of cookies received from the installation, used for authentication
+//		 */
+//		private List<String> cookies = new ArrayList<String>();
+//
+//		/**
+//		 * Creates a new {@link TransportWithCookies} object.
+//		 * @param pClient The {@link XmlRpcClient} that does the heavy lifting.
+//		 */
+//		public TransportWithCookies(XmlRpcClient pClient) {
+//			super(pClient);
+//		}
+//
+//		private URLConnection conn;
+//
+//		@Override
+//		protected URLConnection newURLConnection(URL pURL) throws IOException {
+//            conn = super.newURLConnection(pURL);
+//            return conn;
+//		}
+//
+//		/**
+//		 * This is the meat of these two overrides -- the HTTP header data now includes the
+//		 * cookies received from the Bugzilla installation on login and will pass them every
+//		 * time a connection is made to transmit or receive data.
+//		 */
+//		@Override
+//		protected void initHttpHeaders(XmlRpcRequest request) throws XmlRpcClientException {
+//	        super.initHttpHeaders(request);
+//	        if(cookies.size()>0) {
+//	        	StringBuilder commaSep = new StringBuilder();
+//
+//	        	for(String str : cookies) {
+//	        		commaSep.append(str);
+//	        		commaSep.append(",");
+//	        	}
+//	        	setRequestHeader("Cookie", commaSep.toString());
+//
+//	        }
+//
+//	    }
+//
+//		@Override
+//		protected void close() throws XmlRpcClientException {
+//            getCookies(conn);
+//		}
+//
+//		/**
+//		 * Retrieves cookie values from the HTTP header of Bugzilla responses
+//		 * @param conn
+//		 */
+//		private void getCookies(URLConnection conn) {
+//	    	  if(cookies.size()==0) {
+//	    		  Map<String, List<String>> headers = conn.getHeaderFields();
+//	    		  if(headers.containsKey("Set-Cookie")) {//avoid NPE
+//	    			  List<String> vals = headers.get("Set-Cookie");
+//			    	  for(String str : vals) {
+//			    		  cookies.add(str);
+//			    	  }
+//	    		  }
+//	    	  }
+//
+//	    }
+//
+//	}
 }
