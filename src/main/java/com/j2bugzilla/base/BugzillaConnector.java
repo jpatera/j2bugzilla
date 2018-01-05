@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 
 /**
@@ -56,23 +57,6 @@ public class BugzillaConnector {
 	 */
 	private String token;
 
-
-	private void initializeProxyAuthenticator() {
-		final String proxyUser = "testuser2";
-		final String proxyPassword = "Passw0rd!";
-
-		if (proxyUser != null && proxyPassword != null) {
-			Authenticator.setDefault(
-					new Authenticator() {
-						public PasswordAuthentication getPasswordAuthentication() {
-							return new PasswordAuthentication(
-									proxyUser, proxyPassword.toCharArray()
-							);
-						}
-					}
-			);
-		}
-	}
 
 	/**
 	 * Use this method to designate a host to connect to. You must call this method 
@@ -118,13 +102,17 @@ public class BugzillaConnector {
         } catch (MalformedURLException e) {
             throw new ConnectionException("Host URL is malformed; URL supplied was " + newHost, e);
         }
-        connectTo(hostURL,httpUser,httpPasswd);
+        connectTo(hostURL, httpUser, httpPasswd);
     }
 
     /**
      * Use this method to designate a host to connect to. You must call this method 
      * before executing any other methods of this object.
-     * 
+     *
+	 * This method is intended direct communication from client to a BugZilla server
+	 * If the BugZilla server is behind a proxy, use
+	 * {@code connectTo(URL host, String httpUser, String httpPasswd, Proxy httpProxy, String httpProxyUser, String httpProxyPasswd)}
+	 *
      * If httpUser is not null, than the httpUser and the httpPasswd will be 
      * used to connect to the bugzilla server. This currently only supports basic
      * http authentication ( @see <a href="http://en.wikipedia.org/wiki/Basic_access_authentication">Basic access authentication</a>).
@@ -138,60 +126,61 @@ public class BugzillaConnector {
      * 
      */
     public void connectTo(URL host, String httpUser, String httpPasswd) {
-        XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
-        if (httpUser != null) {
-            config.setBasicUserName(httpUser);
-            config.setBasicPassword(httpPasswd);
-        }
-        config.setServerURL(host);
 
-        initializeProxyAuthenticator();
-        client = new XmlRpcClient();
-        client.setConfig(config);
+		Proxy httpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8082));
+		connectTo(host, httpUser, httpPasswd, httpProxy, "testuser2", "Passw0rd!");
+	}
 
-//        /**
-//         * Here, we override the default behavior of the transport factory to properly
-//         * handle cookies for authentication
-//         */
-//        XmlRpcTransportFactory factory = new XmlRpcSun15HttpTransportFactory(client) {
-//
-//        	private final XmlRpcTransport transport = new TransportWithCookies(client);
-//
-//			@Override
-//			public XmlRpcTransport getTransport() {
-//				return transport;
-//			}
-//		};
-//		client.setTransportFactory(factory);
+	public void connectTo(URL host, String httpUser, String httpPasswd
+			, final Proxy proxy, final String proxyUser, final String proxyPasswd) {
 
+
+		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+		if (httpUser != null) {
+			config.setBasicUserName(httpUser);
+			config.setBasicPassword(httpPasswd);
+		}
+		config.setServerURL(host);
+
+		/**
+		 * This should be called before instantiating a new client
+		 */
+		if (proxyUser != null) {
+			initializeProxyAuthenticator(proxyUser, proxyPasswd == null ? "" : proxyPasswd);
+		}
+
+		client = new XmlRpcClient();
+		client.setConfig(config);
 
 		/**
 		 * Here, we override the default behavior of the transport factory to properly
 		 * handle cookies for authentication
 		 */
-		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(
-				client
-				, new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8082))
-				, "testuser2", "Passw0rd!"
-				);
-
-//			private XmlRpcProxyAndCookiesTransport transport = new XmlRpcProxyAndCookiesTransport(client);
-//
-//			@Override
-//			public XmlRpcTransport getTransport() {
-//				return transport;
-//			}
-//		};
-//		factory.setProxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8081)));
-		client.setTransportFactory(factory);
+		client.setTransportFactory(new XmlRpcProxyAndCookiesTransportFactory(client, proxy));
 	}
-	
+
+
+	private void initializeProxyAuthenticator(final String proxyUser, final String proxyPasswd) {
+		if (proxyUser != null && proxyPasswd != null) {
+			Authenticator.setDefault(
+				new Authenticator() {
+					public PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(
+								proxyUser, proxyPasswd.toCharArray()
+						);
+					}
+				}
+			);
+		}
+	}
+
+
 	/**
 	 * Allows the API to execute any properly encoded XML-RPC method.
 	 * If the method completes properly, the {@link BugzillaMethod#setResultMap(Map)}
 	 * method will be called, and the implementation class will provide
-	 * methods to access any data returned. 
-	 * 
+	 * methods to access any data returned.
+	 *
 	 * @param method A {@link BugzillaMethod} to call on the connected installation
 	 * @throws BugzillaException If the XML-RPC library returns a fault, a {@link BugzillaException}
 	 * with a descriptive error message for that fault will be thrown.

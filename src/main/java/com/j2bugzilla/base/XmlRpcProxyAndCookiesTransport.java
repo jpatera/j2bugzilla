@@ -8,7 +8,6 @@ import org.apache.xmlrpc.client.XmlRpcSun15HttpTransport;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,40 +21,40 @@ import javax.xml.bind.DatatypeConverter;
  * Created by pateraj on 4.1.2018.
  */
 public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
-    private String proxyUser;
-    private String proxyPassword;
+//    private String proxyUser;
+//    private String proxyPassword;
 
     public XmlRpcProxyAndCookiesTransport(XmlRpcClient pClient) {
         super(pClient);
     }
 
-    public void setProxyAuthorization(String proxyUser, String proxyPassword) {
-        this.proxyUser = proxyUser;
-        this.proxyPassword = proxyPassword;
-    }
+//    public void setProxyAuthorization(String proxyUser, String proxyPassword) {
+//        this.proxyUser = proxyUser;
+//        this.proxyPassword = proxyPassword;
+//    }
 
-    /**
-     * @return the proxyUser
-     */
-    public String getProxyUser() {
-        return proxyUser;
-    }
-
-    /**
-     * @return the proxyPassword
-     */
-    public String getProxyPassword() {
-        return proxyPassword;
-    }
+//    /**
+//     * @return the proxyUser
+//     */
+//    public String getProxyUser() {
+//        return proxyUser;
+//    }
+//
+//    /**
+//     * @return the proxyPassword
+//     */
+//    public String getProxyPassword() {
+//        return proxyPassword;
+//    }
 
     protected URLConnection newURLConnection(URL pURL) throws IOException {
 //        URLConnection rc = super.newURLConnection(pURL);
         conn = super.newURLConnection(pURL);
-        if ((getProxy() != null) && (getProxyUser() != null) && (getProxyPassword() != null)) {
-            String creds = getProxyUser()+":"+getProxyPassword();
-//            conn.setRequestProperty("Proxy-Authorization", "Basic " + Base64.encode(creds.getBytes("UTF-8")));
-            conn.setRequestProperty("Proxy-Authorization", "Basic " + DatatypeConverter.printBase64Binary(creds.getBytes(StandardCharsets.UTF_8)));
-        }
+//        if ((getProxy() != null) && (getProxyUser() != null) && (getProxyPassword() != null)) {
+//            String creds = getProxyUser()+":"+getProxyPassword();
+////            conn.setRequestProperty("Proxy-Authorization", "Basic " + Base64.encode(creds.getBytes("UTF-8")));
+//            conn.setRequestProperty("Proxy-Authorization", "Basic " + DatatypeConverter.printBase64Binary(creds.getBytes(StandardCharsets.UTF_8)));
+//        }
         return conn;
     }
 
