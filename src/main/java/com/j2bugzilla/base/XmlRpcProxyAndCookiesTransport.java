@@ -13,75 +13,77 @@ import java.util.List;
 import java.util.Map;
 
 
-import org.apache.ws.commons.util.Base64;
-
 import javax.xml.bind.DatatypeConverter;
 
 /**
+ * XML-RPC transport implementation for j2bugzilla library, based on the {@link java.net.HttpURLConnection} class.
+ * Adds support for the basic proxy authentication.
+ * The original j2bugzilla's headers & cookies processing is preserved
+ *
  * Created by pateraj on 4.1.2018.
  */
 public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
-//    private String proxyUser;
-//    private String proxyPassword;
 
-    public XmlRpcProxyAndCookiesTransport(XmlRpcClient pClient) {
-        super(pClient);
+    private URLConnection urlConn;
+    private String proxyUser;
+    private String proxyPassword;
+
+    /**
+     * A {@code List} of cookies received from the installation, used for Bugzilla authentication
+     */
+    private List<String> cookies = new ArrayList<String>();
+
+
+    /**
+     * Creates a new {@link XmlRpcProxyAndCookiesTransport} object.
+     * @param client The {@link XmlRpcClient} that does the heavy lifting.
+     */
+    public XmlRpcProxyAndCookiesTransport(final XmlRpcClient client) {
+        super(client);
     }
 
-//    public void setProxyAuthorization(String proxyUser, String proxyPassword) {
-//        this.proxyUser = proxyUser;
-//        this.proxyPassword = proxyPassword;
-//    }
+    /**
+     * Sets optional proxy user and password for proxy authentication.
+     * Neither {@code proxyUser} nor {@code proxyPassword} should be null, otherwise proxy authentication will not be triggered.
+     * @param proxyUser A plain text proxy user name.
+     * @param proxyPassword A plain text proxy password.
+     */
+    public void setProxyCredentials(final String proxyUser, final String proxyPassword) {
+        this.proxyUser = proxyUser;
+        this.proxyPassword = proxyPassword;
+    }
 
 //    /**
-//     * @return the proxyUser
+//     * @return the proxyUser previously set by {@code setProxyCredentials(...)}
 //     */
 //    public String getProxyUser() {
 //        return proxyUser;
 //    }
 //
 //    /**
-//     * @return the proxyPassword
+//     * @return the proxyUser previously set by {@code setProxyCredentials(...)}
 //     */
 //    public String getProxyPassword() {
 //        return proxyPassword;
 //    }
 
-    protected URLConnection newURLConnection(URL pURL) throws IOException {
-//        URLConnection rc = super.newURLConnection(pURL);
-        conn = super.newURLConnection(pURL);
-//        if ((getProxy() != null) && (getProxyUser() != null) && (getProxyPassword() != null)) {
-//            String creds = getProxyUser()+":"+getProxyPassword();
-////            conn.setRequestProperty("Proxy-Authorization", "Basic " + Base64.encode(creds.getBytes("UTF-8")));
-//            conn.setRequestProperty("Proxy-Authorization", "Basic " + DatatypeConverter.printBase64Binary(creds.getBytes(StandardCharsets.UTF_8)));
-//        }
-        return conn;
+    @Override
+    protected URLConnection newURLConnection(URL url) throws IOException {
+
+        urlConn = super.newURLConnection(url);
+        if ((getProxy() != null) && (proxyUser != null) && (proxyPassword != null)) {
+            String proxyCreds = proxyUser + ":" + proxyPassword;
+            urlConn.setRequestProperty("Proxy-Authorization", "Basic " + DatatypeConverter.printBase64Binary(proxyCreds.getBytes("UTF-8")));
+//            urlConn.setRequestProperty("Content-Length", "0");
+//            urlConn.setRequestProperty("Content-Type", "");
+        }
+        return urlConn;
     }
-
-
-
-
-
-
-    /**
-     * A {@code List} of cookies received from the installation, used for authentication
-     */
-    private List<String> cookies = new ArrayList<String>();
-
-//    /**
-//     * Creates a new {@link TransportWithCookies} object.
-//     * @param pClient The {@link XmlRpcClient} that does the heavy lifting.
-//     */
-//    public TransportWithCookies(XmlRpcClient pClient) {
-//        super(pClient);
-//    }
-
-    private URLConnection conn;
 
 //    @Override
 //    protected URLConnection newURLConnection(URL pURL) throws IOException {
-//        conn = super.newURLConnection(pURL);
-//        return conn;
+//        urlConn = super.newURLConnection(pURL);
+//        return urlConn;
 //    }
 
     /**
@@ -91,8 +93,9 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
      */
     @Override
     protected void initHttpHeaders(XmlRpcRequest request) throws XmlRpcClientException {
+
         super.initHttpHeaders(request);
-        if(cookies.size()>0) {
+        if(cookies.size() > 0) {
             StringBuilder commaSep = new StringBuilder();
 
             for(String str : cookies) {
@@ -100,30 +103,28 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
                 commaSep.append(",");
             }
             setRequestHeader("Cookie", commaSep.toString());
-
         }
-
     }
 
     @Override
     protected void close() throws XmlRpcClientException {
-        getCookies(conn);
+        getCookies(urlConn);
     }
 
     /**
      * Retrieves cookie values from the HTTP header of Bugzilla responses
-     * @param conn
+     * @param conn URL connection with the Bugzilla cookies
      */
     private void getCookies(URLConnection conn) {
+
         if(cookies.size()==0) {
             Map<String, List<String>> headers = conn.getHeaderFields();
-            if(headers.containsKey("Set-Cookie")) {//avoid NPE
+            if(headers.containsKey("Set-Cookie")) { //avoid NPE
                 List<String> vals = headers.get("Set-Cookie");
                 for(String str : vals) {
                     cookies.add(str);
                 }
             }
         }
-
     }
 }
