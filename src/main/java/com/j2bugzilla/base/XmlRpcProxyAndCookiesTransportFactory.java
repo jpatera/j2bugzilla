@@ -11,29 +11,35 @@ import java.net.Proxy;
  * Created by pateraj on 4.1.2018.
  */
 public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransportFactory {
-//    private String proxyUser;
-//    private String proxyPassword;
     private Proxy proxy;
+    private String proxyUser;
+    private String proxyPassword;
 
-//    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient pClient) {
-//        super(pClient);
-//        setTransport();
-//    }
+//    private XmlRpcTransport transport;
+    private XmlRpcProxyAndCookiesTransport transport;
 
-    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client, final Proxy proxy) {
+    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client) {
         super(client);
-//        super.setProxy(pProxy);
-        this.proxy = proxy;
-//        setTransport(pProxy);
+        transport = new XmlRpcProxyAndCookiesTransport(getClient());
+        transport.setSSLSocketFactory(getSSLSocketFactory());
+
+//        this(client, null);
     }
 
-//    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient pClient, final Proxy proxy, final String proxyUsername, final String proxyPassword) {
-//        super(pClient);
+//    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client, final Proxy proxy) {
+//        this(client, proxy, null, null);
+////        super.setProxy(pProxy);
+////        this.proxy = proxy;
+////        setTransport(pProxy);
+//    }
+//
+//    public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client, final Proxy proxy, final String proxyUser, final String proxyPassword) {
+//        super(client);
 //        super.setProxy(proxy);
 //        this.proxy = proxy;
 ////        this.proxyUser = proxyUsername;
 ////        this.proxyPassword = proxyPassword;
-//        setTransport();
+////        setTransport();
 //    }
 
 //    public void setProxyAuthorization(String proxyUser, String proxyPassword) {
@@ -48,6 +54,14 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
      */
     @Override
     public void setProxy(Proxy proxy) {
+        this.proxy = proxy;
+        transport.setProxy(proxy);
+    }
+
+    public void setProxyCredentials(final String proxyUser, final String proxyPassword) {
+        this.proxyUser = proxyUser;
+        this.proxyPassword = proxyPassword;
+        transport.setProxyCredentials(proxyUser, proxyPassword);
     }
 
 //    /**
@@ -71,30 +85,25 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
 //        return proxy;
 //    }
 
-//    private XmlRpcTransport setTransport(final Proxy proxy) {
-//        transport = new XmlRpcProxyAndCookiesTransport(getClient());
-//        transport.setSSLSocketFactory(getSSLSocketFactory());
-//        transport.setProxy(proxy);
+//    private void setTransport(final Proxy proxy) {
+////        transport = new XmlRpcProxyAndCookiesTransport(getClient());
+////        transport.setSSLSocketFactory(getSSLSocketFactory());
+////        transport.setProxy(proxy);
 ////        transport.setProxy(getProxy());
-////        if (getProxy() != null) {
-////            transport.setProxyAuthorization(getProxyUser(), getProxyPassword());
+////        if (proxy != null) {
+////            transport.setProxyCredentials(proxyUser, proxyPassword);
 ////        }
-//        return transport;
+////        return transport;
 //    }
 
     @Override
     public XmlRpcTransport getTransport() {
-        XmlRpcSun15HttpTransport transport = new XmlRpcProxyAndCookiesTransport(getClient());
-        transport.setSSLSocketFactory(getSSLSocketFactory());
-        transport.setProxy(proxy);
-//        transport.setProxy(getProxy());
-//        if (getProxy() != null) {
-//            transport.setProxyAuthorization(getProxyUser(), getProxyPassword());
+//        XmlRpcProxyAndCookiesTransport transport = new XmlRpcProxyAndCookiesTransport(getClient());
+//        transport.setSSLSocketFactory(getSSLSocketFactory());
+//        transport.setProxy(proxy);
+//        if (proxy != null) {
+//            transport.setProxyCredentials(proxyUser, proxyPassword);
 //        }
         return transport;
     }
-
-//    private final XmlRpcTransport transport = new XmlRpcProxyAndCookiesTransport(client);
-    private XmlRpcProxyAndCookiesTransport transport;
-
 }
