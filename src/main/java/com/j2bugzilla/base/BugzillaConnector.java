@@ -166,6 +166,9 @@ public class BugzillaConnector {
 		}
 		config.setServerURL(host);
 
+		client = new XmlRpcClient();
+		client.setConfig(config);
+
 		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(client);
 		if (proxy != null) {
 			factory.setProxy(proxy);
@@ -181,13 +184,12 @@ public class BugzillaConnector {
 //			initializeProxyAuthenticator(proxyUser, proxyPasswd == null ? "" : proxyPasswd);
 //		}
 
-		client = new XmlRpcClient();
-		client.setConfig(config);
 
 		/**
 		 * Here, we override the default behavior of the transport factory to properly
 		 * handle cookies for authentication
 		 */
+		// TODO: maybe not necessary?
 		client.setTransportFactory(factory);
 	}
 
