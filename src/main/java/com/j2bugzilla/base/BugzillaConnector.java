@@ -24,13 +24,31 @@ import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 
@@ -56,6 +74,10 @@ public class BugzillaConnector {
 	 * See {@link com.j2bugzilla.rpc.LogIn#getToken()}
 	 */
 	private String token;
+
+	public BugzillaConnector() {
+//		initializeProxyAuthenticator("", "");
+	}
 
 
 	/**
@@ -169,20 +191,30 @@ public class BugzillaConnector {
 		client = new XmlRpcClient();
 		client.setConfig(config);
 
-		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(client);
-		if (proxy != null) {
-			factory.setProxy(proxy);
-			if (proxyUser != null && proxyPasswd != null) {
-				factory.setProxyCredentials(proxyUser, proxyPasswd);
-			}
-		}
-
-//		/**
-//		 * This should be called before instantiating a new client
-//		 */
-//		if (proxyUser != null) {
-//			initializeProxyAuthenticator(proxyUser, proxyPasswd == null ? "" : proxyPasswd);
+// Using Java HttpClient for transport:
+//		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(client);
+//		if (proxy != null) {
+//			factory.setProxy(proxy);
+//			if (proxyUser != null && proxyPasswd != null) {
+//				factory.setProxyCredentials(proxyUser, proxyPasswd);
+//			}
 //		}
+
+
+// Using Apache commons HttpClient for transport:
+//		final XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(client);
+		HttpHost proxyHost = new HttpHost("qa-sh-mail.prgqa.hpecorp.net", 8082, "http");
+		final CloseableHttpClient httpClient = getNewClient(proxyHost, proxyUser, proxyPasswd);
+		final XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(client);
+
+		// FIXME:
+		factory.setHttpClient(httpClient);
+
+		client.setTransportFactory(factory);
+//		final HttpState httpState = client.getState();
+
+
+
 
 
 		/**
@@ -193,20 +225,77 @@ public class BugzillaConnector {
 		client.setTransportFactory(factory);
 	}
 
+	private CloseableHttpClient getNewClient(final HttpHost proxyHost, final String proxyUser, final String proxyPasswd) {
+		final CredentialsProvider credsProvider = new BasicCredentialsProvider();
+//		credsProvider.setCredentials(new AuthScope(bugzillaTarget), new UsernamePasswordCredentials(username, password));
 
-//	private void initializeProxyAuthenticator(final String proxyUser, final String proxyPasswd) {
-//		if (proxyUser != null && proxyPasswd != null) {
-//			Authenticator. setDefault(
-//				new Authenticator() {
-//					public PasswordAuthentication getPasswordAuthentication() {
-//						return new PasswordAuthentication(
-//								proxyUser, proxyPasswd.toCharArray()
-//						);
-//					}
-//				}
-//			);
-//		}
-//	}
+		RequestConfig defaultRequestConfig = RequestConfig.custom()
+				.setConnectTimeout(1 * 1000)    // Timeout for receiving a free connection from pooling connection manager
+				// As we are using a dedicated connection manager per API call
+				//   there should be always free connections available.
+				.setConnectionRequestTimeout(5 * 1000)  // Taking 5 seconds as an acceptable timeout for waiting
+				//   for an answer to the http(s) request.
+				.setSocketTimeout(10 * 1000) // Taking 10 seconds as an acceptable timeout for waiting
+				//   for data to be sent from target to the client.
+				.build();
+
+		// Following headers can change a default behaviour of some proxies in terms of that the data sent from target
+		// to proxy are not cached on the proxy. As a result http client will receive always current data from the target.
+		List<Header> defaultClientHeaders = new ArrayList<Header>();
+		defaultClientHeaders.add(new BasicHeader(HttpHeaders.PRAGMA, "no-cache"));
+		defaultClientHeaders.add(new BasicHeader(HttpHeaders.CACHE_CONTROL, "no-cache"));
+
+////		HttpHost sscProxy = resolveSscProxy(config, bugzillaProtocol);
+//		String proxyHostName = "qa-sh-mail.prgqa.hpecorp.net";
+//		int proxyPortNum = 8082;
+//		String proxyScheme = "http";
+//		HttpHost proxy = new HttpHost(proxyHostName, proxyPortNum, proxyScheme);
+
+		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create()
+//				.setConnectionManager(connMan)
+				.setDefaultCredentialsProvider(credsProvider)
+				.setDefaultRequestConfig(defaultRequestConfig)
+				.setDefaultHeaders(defaultClientHeaders)
+				.setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
+				// Setting the previous requestSentRetryEnabled=true helped filing bugs through less responsive proxy
+				// (specifically a Tiny proxy). This parameter affects retrying only non idempotent methods (POST in case of ALM)
+				// idempotent methods GET and PUT are always retried.
+				// Note: if responses to POST are not being returned but the requests are reaching ALM it could happen
+				// that unwanted/not tracked/dead resources are created on the bug tracker provider side. In this case
+				// it should be considered switching POST retries off.
+				.setDefaultCookieStore(new BasicCookieStore());
+
+		if (proxyHost == null) {
+			httpClientBuilder
+					.useSystemProperties(); // Keeping this for backward plugin compatibility if the  SSC proxy is not used
+			// Among other system properties http(s).proxyHost, http(s).proxyPort httpNonProxyHosts are taken into account
+			// For the complete list see http://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/HttpClientBuilder.html
+		} else {
+//			Credentials proxyCreds = resolveSscProxyCredentials(config, bugzillaProtocol);
+//					, config.get(ProxyField.HTTP_PROXY_PASSWORD.getFieldName()));;
+			Credentials proxyCreds = new UsernamePasswordCredentials(proxyUser, proxyPasswd);
+			if (proxyCreds != null) {
+				credsProvider.setCredentials(new AuthScope(proxyHost.getHostName(), proxyHost.getPort()), proxyCreds);
+			}
+			httpClientBuilder
+					.setProxy(proxyHost);
+		}
+		return httpClientBuilder.build();
+	}
+
+	private void initializeProxyAuthenticator(final String proxyUser, final String proxyPasswd) {
+		if (proxyUser != null && proxyPasswd != null) {
+			Authenticator.setDefault(
+				new Authenticator() {
+					public PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(
+								proxyUser, proxyPasswd.toCharArray()
+						);
+					}
+				}
+			);
+		}
+	}
 
 
 	/**
