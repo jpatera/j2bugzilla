@@ -16,12 +16,13 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
     private String proxyPassword;
 
 //    private XmlRpcTransport transport;
-    private XmlRpcProxyAndCookiesTransport transport;
+//    private XmlRpcProxyAndCookiesTransport transport;
 
     public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client) {
         super(client);
-        transport = new XmlRpcProxyAndCookiesTransport(getClient());
-        transport.setSSLSocketFactory(getSSLSocketFactory());
+//        setSSLSocketFactory();
+//        transport = new XmlRpcProxyAndCookiesTransport(getClient());
+//        transport.setSSLSocketFactory(getSSLSocketFactory());
 
 //        this(client, null);
     }
@@ -48,20 +49,20 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
 //    }
 
     /**
-     * Does nothing, suppresses the parent method
-     * We want the proxy to be set only in constructor
-     * @param proxy Not used, can be anything.
+     * Saves proxy in this class because the parent XmlRpcSun15HttpTransportFactory
+     * does not have a public method getProxy()
+     * @param proxy proxy server for Bugzilla
      */
     @Override
     public void setProxy(Proxy proxy) {
+        super.setProxy(proxy);
         this.proxy = proxy;
-        transport.setProxy(proxy);
     }
 
     public void setProxyCredentials(final String proxyUser, final String proxyPassword) {
         this.proxyUser = proxyUser;
         this.proxyPassword = proxyPassword;
-        transport.setProxyCredentials(proxyUser, proxyPassword);
+//        transport.setProxyCredentials(proxyUser, proxyPassword);
     }
 
 //    /**
@@ -98,12 +99,12 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
 
     @Override
     public XmlRpcTransport getTransport() {
-//        XmlRpcProxyAndCookiesTransport transport = new XmlRpcProxyAndCookiesTransport(getClient());
+        XmlRpcProxyAndCookiesTransport transport = new XmlRpcProxyAndCookiesTransport(getClient());
 //        transport.setSSLSocketFactory(getSSLSocketFactory());
-//        transport.setProxy(proxy);
-//        if (proxy != null) {
-//            transport.setProxyCredentials(proxyUser, proxyPassword);
-//        }
+        transport.setProxy(proxy);
+        if (proxy != null) {
+            transport.setProxyCredentials(proxyUser, proxyPassword);
+        }
         return transport;
     }
 }
