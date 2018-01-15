@@ -35,6 +35,7 @@ public final class XmlExceptionHandler {
 	private static final int INVALID_MIME = 601;
 	private static final int ATTACHMENT_TOO_LARGE = 600;
 	private static final int INVALID_USER = 504;
+	private static final int PROXY_AUTH_REQUIRED = 407;
 	private static final int BAD_CREDENTIALS = 300;
 	private static final int MODIFY_PERMISSION_DENIED = 115;
 	private static final int EDIT_PERMISSION_DENIED = 108;
@@ -74,6 +75,7 @@ public final class XmlExceptionHandler {
 		FAULT_CODES.put(EDIT_PERMISSION_DENIED, "You do not have permission to edit this bug");
 		FAULT_CODES.put(MODIFY_PERMISSION_DENIED, "You do not have permission to modify this bug");
 		FAULT_CODES.put(INVALID_USER, "An invalid user was specified");
+		FAULT_CODES.put(PROXY_AUTH_REQUIRED, "Proxy authentication failed");
 		FAULT_CODES.put(ATTACHMENT_TOO_LARGE, "The submitted attachment was too large");
 		FAULT_CODES.put(INVALID_MIME, "The MIME type specified was invalid");
 		FAULT_CODES.put(NO_FILE_NAME, "You did not specify a file name");
@@ -93,7 +95,7 @@ public final class XmlExceptionHandler {
 		if(message == null) { 
 			message = "An unknown error was encountered; fault code: " + exception.code + " : " + exception.getMessage();
 		}
-		return new BugzillaException(message, exception);
+		return new BugzillaException(message, exception.code, exception);
 	}
 	
 }

@@ -24,6 +24,8 @@ package com.j2bugzilla.base;
  */
 public class BugzillaException extends Exception {
 
+	private int code;
+
 	/**
 	 * Eclipse-generated SUID
 	 */
@@ -37,12 +39,27 @@ public class BugzillaException extends Exception {
 	public BugzillaException(String message, Throwable cause) {
 		super(message, cause);
 	}
-	
+
+	/**
+	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
+	 * @param message A customized error message describing the issue
+	 * @param cause The nested cause, typically a {@link org.apache.xmlrpc.XmlRpcException XmlRpcException}.
+	 */
+	public BugzillaException(String message, int code, Throwable cause) {
+		super(message, cause);
+		this.code = code;
+	}
+
 	/**
 	 * Constructs a new {@link BugzillaException} with the specified summary
 	 * @param message A short, descriptive message of the error
 	 */
 	public BugzillaException(String message) {
 		super(message);
+	}
+
+
+	public int getCode() {
+		return code;
 	}
 }

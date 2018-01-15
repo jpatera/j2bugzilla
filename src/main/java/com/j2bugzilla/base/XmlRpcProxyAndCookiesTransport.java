@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 Jan Patera
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.j2bugzilla.base;
 
 import org.apache.xmlrpc.XmlRpcRequest;
@@ -18,7 +33,7 @@ import javax.xml.bind.DatatypeConverter;
 /**
  * XML-RPC transport implementation for j2bugzilla library, based on the {@link java.net.HttpURLConnection} class.
  * Adds support for the basic proxy authentication.
- * The original j2bugzilla's headers & cookies processing is preserved
+ * The headers & cookies processing from previous j2bugzilla version is preserved
  *
  * Created by pateraj on 4.1.2018.
  */
@@ -45,6 +60,9 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
     /**
      * Sets optional proxy user and password for proxy authentication.
      * Neither {@code proxyUser} nor {@code proxyPassword} should be null, otherwise proxy authentication will not be triggered.
+     *
+     * Note: https requests through authenticated proxies are not supported
+     *
      * @param proxyUser A plain text proxy user name.
      * @param proxyPassword A plain text proxy password.
      */
@@ -53,19 +71,6 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
         this.proxyPassword = proxyPassword;
     }
 
-//    /**
-//     * @return the proxyUser previously set by {@code setProxyCredentials(...)}
-//     */
-//    public String getProxyUser() {
-//        return proxyUser;
-//    }
-//
-//    /**
-//     * @return the proxyUser previously set by {@code setProxyCredentials(...)}
-//     */
-//    public String getProxyPassword() {
-//        return proxyPassword;
-//    }
 
     @Override
     protected URLConnection newURLConnection(URL url) throws IOException {
@@ -74,17 +79,10 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
         if ((getProxy() != null) && (proxyUser != null) && (proxyPassword != null)) {
             String proxyCreds = proxyUser + ":" + proxyPassword;
             urlConn.setRequestProperty("Proxy-Authorization", "Basic " + DatatypeConverter.printBase64Binary(proxyCreds.getBytes("UTF-8")));
-//            urlConn.setRequestProperty("Content-Length", "0");
-//            urlConn.setRequestProperty("Content-Type", "");
         }
         return urlConn;
     }
 
-//    @Override
-//    protected URLConnection newURLConnection(URL pURL) throws IOException {
-//        urlConn = super.newURLConnection(pURL);
-//        return urlConn;
-//    }
 
     /**
      * This is the meat of these two overrides -- the HTTP header data now includes the
@@ -106,10 +104,12 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
         }
     }
 
+
     @Override
     protected void close() throws XmlRpcClientException {
         getCookies(urlConn);
     }
+
 
     /**
      * Retrieves cookie values from the HTTP header of Bugzilla responses

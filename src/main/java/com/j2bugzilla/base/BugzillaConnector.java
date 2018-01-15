@@ -18,38 +18,16 @@ package com.j2bugzilla.base;
 
 import com.j2bugzilla.rpc.LogIn;
 
-import java.net.Authenticator;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicHeader;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
-import org.apache.xmlrpc.client.XmlRpcTransportFactory;
 
 
 /**
@@ -75,226 +53,165 @@ public class BugzillaConnector {
 	 */
 	private String token;
 
-	public BugzillaConnector() {
-//		initializeProxyAuthenticator("", "");
-	}
-
 
 	/**
-	 * Use this method to designate a host to connect to. You must call this method 
-	 * before executing any other methods of this object.
-	 * 
-	 * @param host A string pointing to the domain of the Bugzilla installation
+	 * Use this method to designate a host to connect to. You must call one of connectTo(...) methods
+	 * at least once before executing any other methods of this object.
+	 *
+	 * This method is intended for a direct communication from client to a Bugzilla server.
+	 * If the Bugzilla server is behind a proxy, use one of connectTo(...) methods with proxy parameters.
+	 *
+	 * @param bugzillaDomain A string pointing to the domain of the Bugzilla installation
+	 *
 	 * @throws ConnectionException if a connection cannot be established
 	 */
-    public void connectTo(String host) throws ConnectionException {
-        connectTo(host,null,null);
+    public void connectTo(String bugzillaDomain) throws ConnectionException {
+        connectTo(bugzillaDomain,null,null);
     }
 
+
     /**
-     * Use this method to designate a host to connect to. You must call this method 
-     * before executing any other methods of this object.
-     * 
-     * If httpUser is not null, than the httpUser and the httpPasswd will be 
+     * Use this method to designate a host to connect to. You must call one of connectTo(...) methods
+     * at least once before executing any other methods of this object.
+     *
+	 * This method is intended for a direct communication from client to a Bugzilla server.
+	 * If the Bugzilla server is behind a proxy, use one of connectTo(...) methods with proxy parameters.
+	 *
+	 * If httpUser is not null, than the httpUser and the httpPasswd will be
      * used to connect to the bugzilla server. This currently only supports basic
      * http authentication ( @see <a href="http://en.wikipedia.org/wiki/Basic_access_authentication">Basic access authentication</a>).
      * 
      * This is not used to login into bugzilla. To authenticate with your specific Bugzilla installation,
      * please see {@link com.j2bugzilla.rpc.LogIn LogIn}.
      * 
-     * @param host A string pointing to the domain of the Bugzilla installation
+     * @param bugzillaDomain A string pointing to the domain of the Bugzilla installation
      * @param httpUser username for an optional Basic access authentication
      * @param httpPasswd password for an optional Basic access authentication
+	 *
      * @throws ConnectionException if a connection cannot be established
      */
-    public void connectTo(final String host, final String httpUser, final String httpPasswd) throws ConnectionException {
-
-//        String newHost = host;
-//        if(!newHost.endsWith("xmlrpc.cgi")) {
-//            if(newHost.endsWith("/")) {
-//                newHost += "xmlrpc.cgi";
-//            } else {
-//                newHost += "/xmlrpc.cgi";
-//            }
-//        }
-//
-//        URL hostURL;
-//        try {
-//            hostURL = new URL(newHost);
-//        } catch (MalformedURLException e) {
-//            throw new ConnectionException("Host URL is malformed; URL supplied was " + newHost, e);
-//        }
-//        connectTo(hostURL, httpUser, httpPasswd, null, null, null);
-        connectTo(host, httpUser, httpPasswd, null, null, null);
-    }
-
-	public void connectTo(final String host, final String httpUser, final String httpPasswd
-						, final Proxy proxy, final String proxyUser, final String proxyPasswd)
+    public void connectTo(final String bugzillaDomain, final String httpUser, final String httpPasswd)
 			throws ConnectionException {
 
-		String newHost = host;
-		if(!newHost.endsWith("xmlrpc.cgi")) {
-			if(newHost.endsWith("/")) {
-				newHost += "xmlrpc.cgi";
-			} else {
-				newHost += "/xmlrpc.cgi";
-			}
-		}
+        connectTo(bugzillaDomain, httpUser, httpPasswd, null, null, null);
+    }
 
-		URL hostURL;
-		try {
-			hostURL = new URL(newHost);
-		} catch (MalformedURLException e) {
-			throw new ConnectionException("Host URL is malformed; URL supplied was " + newHost, e);
-		}
-		connectTo(hostURL, httpUser, httpPasswd, proxy, proxyUser, proxyPasswd);
+
+	/**
+	 * Use this method to designate a Bugzilla host to connect to. You must call one of connectTo(...) methods
+	 * at least once before executing any other methods of this object.
+	 *
+	 * This method is intended for a proxied communication from client to a Bugzilla server.
+	 *
+	 * If httpUser is not null, than the httpUser and the httpPasswd will be
+	 * used to connect to the bugzilla server. This currently only supports basic
+	 * http authentication ( @see <a href="http://en.wikipedia.org/wiki/Basic_access_authentication">Basic access authentication</a>).
+	 *
+	 * This is not used to login into bugzilla. To authenticate with your specific Bugzilla installation,
+	 * please see {@link com.j2bugzilla.rpc.LogIn LogIn}.
+	 *
+	 * @param bugzillaDomain a string pointing to the domain of the Bugzilla installation
+	 * @param httpUser username for an optional Basic access authentication
+	 * @param httpPasswd password for an optional Basic access authentication
+	 * @param proxy a proxy you want to use; if it is null a direct communication will be set up
+	 * @param proxyUser username for an optional Basic proxy authentication; if it is null, no authentication will be performed
+	 * @param proxyPasswd password for an optional Basic proxy authentication
+	 *
+	 * @throws ConnectionException if a connection cannot be established
+	 */
+	public void connectTo(final String bugzillaDomain, final String httpUser, final String httpPasswd
+			, final Proxy proxy, final String proxyUser, final String proxyPasswd)
+			throws ConnectionException {
+
+		connectToInternal(getBugzillaHostURL (buildBugzillaHost(bugzillaDomain))
+				, httpUser, httpPasswd, proxy, proxyUser, proxyPasswd);
 	}
 
-//    /**
-//     * Use this method to designate a host to connect to. You must call this method
-//     * before executing any other methods of this object.
-//     *
-//	 * This method is intended direct communication from client to a BugZilla server
-//	 * If the BugZilla server is behind a proxy, use
-//	 * {@code connectTo(URL host, String httpUser, String httpPasswd, Proxy httpProxy, String httpProxyUser, String httpProxyPasswd)}
-//	 *
-//     * If httpUser is not null, than the httpUser and the httpPasswd will be
-//     * used to connect to the bugzilla server. This currently only supports basic
-//     * http authentication ( @see <a href="http://en.wikipedia.org/wiki/Basic_access_authentication">Basic access authentication</a>).
-//     *
-//     * This is not used to login into bugzilla. To authenticate with your specific Bugzilla installation,
-//     * please see {@link com.j2bugzilla.rpc.LogIn LogIn}.
-//     *
-//     * @param host A URL of form http:// + somedomain + /xmlrpc.cgi
-//     * @param httpUser username for an optional Basic access authentication
-//     * @param httpPasswd password for an optional Basic access authentication
-//     *
-//     */
-//    public void connectTo(URL host, String httpUser, String httpPasswd)  throws ConnectionException {
-//
-////		Proxy httpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("qa-sh-mail.prgqa.hpecorp.net", 8082));
-//		connectTo(host, httpUser, httpPasswd, null, null, null);
-//	}
 
-	public void connectTo(final URL host, final String httpUser, final String httpPasswd
+    /**
+     * Use this method to designate a Bugzilla host to connect to. You must call one of connect(...) methods
+     * at least once before executing any other methods of this object.
+     *
+	 * This method is intended for a proxied communication from client to a Bugzilla server.
+	 *
+     * If httpUser is not null, than the httpUser and the httpPasswd will be
+     * used to connect to the bugzilla server. This currently only supports basic
+     * http authentication ( @see <a href="http://en.wikipedia.org/wiki/Basic_access_authentication">Basic access authentication</a>).
+     *
+     * This is not used to login into Bugzilla. To authenticate with your specific Bugzilla installation,
+     * please see {@link com.j2bugzilla.rpc.LogIn LogIn}.
+     *
+     * @param bugzillaHostURL A URL of form http:// + bugzilladomain + /xmlrpc.cgi
+     * @param httpUser username for an optional Basic access authentication
+     * @param httpPasswd password for an optional Basic access authentication
+	 * @param proxy a proxy you want to use; if it is null a direct communication will be set up
+	 * @param proxyUser username for an optional Basic proxy authentication; if it is null, no authentication will be performed
+	 * @param proxyPasswd password for an optional Basic proxy authentication
+	 *
+	 * @throws ConnectionException if a connection cannot be established
+     */
+	public void connectTo(final URL bugzillaHostURL, final String httpUser, final String httpPasswd
 						, final Proxy proxy, final String proxyUser, final String proxyPasswd)
 			throws ConnectionException{
 
+		connectToInternal(bugzillaHostURL, httpUser, httpPasswd, proxy, proxyUser, proxyPasswd);
+	}
+
+
+	private void connectToInternal(final URL bugzillaHostUrl, final String httpUser, final String httpPasswd
+			, final Proxy proxy, final String proxyUser, final String proxyPasswd)
+			throws ConnectionException{
 
 		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 		if (httpUser != null) {
 			config.setBasicUserName(httpUser);
 			config.setBasicPassword(httpPasswd);
 		}
-		config.setServerURL(host);
+		config.setServerURL(bugzillaHostUrl);
 
 		client = new XmlRpcClient();
 		client.setConfig(config);
 
-// Using Java HttpClient for transport:
-//		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(client);
-//		if (proxy != null) {
-//			factory.setProxy(proxy);
-//			if (proxyUser != null && proxyPasswd != null) {
-//				factory.setProxyCredentials(proxyUser, proxyPasswd);
-//			}
-//		}
-
-
-// Using Apache commons HttpClient for transport:
-//		final XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(client);
-		HttpHost proxyHost = new HttpHost("qa-sh-mail.prgqa.hpecorp.net", 8082, "http");
-		final CloseableHttpClient httpClient = getNewClient(proxyHost, proxyUser, proxyPasswd);
-		final XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(client);
-
-		// FIXME:
-		factory.setHttpClient(httpClient);
-
-		client.setTransportFactory(factory);
-//		final HttpState httpState = client.getState();
-
-
-
-
+		XmlRpcProxyAndCookiesTransportFactory factory = new XmlRpcProxyAndCookiesTransportFactory(client);
+		if (proxy != null) {
+			factory.setProxy(proxy);
+			if (proxyUser != null && proxyPasswd != null) {
+				factory.setProxyCredentials(proxyUser, proxyPasswd);
+			}
+		}
 
 		/**
 		 * Here, we override the default behavior of the transport factory to properly
-		 * handle cookies for authentication
+		 * handle cookies for BZ authentication and to add a proxy support
 		 */
-		// TODO: maybe not necessary?
 		client.setTransportFactory(factory);
 	}
 
-	private CloseableHttpClient getNewClient(final HttpHost proxyHost, final String proxyUser, final String proxyPasswd) {
-		final CredentialsProvider credsProvider = new BasicCredentialsProvider();
-//		credsProvider.setCredentials(new AuthScope(bugzillaTarget), new UsernamePasswordCredentials(username, password));
 
-		RequestConfig defaultRequestConfig = RequestConfig.custom()
-				.setConnectTimeout(1 * 1000)    // Timeout for receiving a free connection from pooling connection manager
-				// As we are using a dedicated connection manager per API call
-				//   there should be always free connections available.
-				.setConnectionRequestTimeout(5 * 1000)  // Taking 5 seconds as an acceptable timeout for waiting
-				//   for an answer to the http(s) request.
-				.setSocketTimeout(10 * 1000) // Taking 10 seconds as an acceptable timeout for waiting
-				//   for data to be sent from target to the client.
-				.build();
+	private String buildBugzillaHost (String bugzillaDomainHost) {
 
-		// Following headers can change a default behaviour of some proxies in terms of that the data sent from target
-		// to proxy are not cached on the proxy. As a result http client will receive always current data from the target.
-		List<Header> defaultClientHeaders = new ArrayList<Header>();
-		defaultClientHeaders.add(new BasicHeader(HttpHeaders.PRAGMA, "no-cache"));
-		defaultClientHeaders.add(new BasicHeader(HttpHeaders.CACHE_CONTROL, "no-cache"));
-
-////		HttpHost sscProxy = resolveSscProxy(config, bugzillaProtocol);
-//		String proxyHostName = "qa-sh-mail.prgqa.hpecorp.net";
-//		int proxyPortNum = 8082;
-//		String proxyScheme = "http";
-//		HttpHost proxy = new HttpHost(proxyHostName, proxyPortNum, proxyScheme);
-
-		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create()
-//				.setConnectionManager(connMan)
-				.setDefaultCredentialsProvider(credsProvider)
-				.setDefaultRequestConfig(defaultRequestConfig)
-				.setDefaultHeaders(defaultClientHeaders)
-				.setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
-				// Setting the previous requestSentRetryEnabled=true helped filing bugs through less responsive proxy
-				// (specifically a Tiny proxy). This parameter affects retrying only non idempotent methods (POST in case of ALM)
-				// idempotent methods GET and PUT are always retried.
-				// Note: if responses to POST are not being returned but the requests are reaching ALM it could happen
-				// that unwanted/not tracked/dead resources are created on the bug tracker provider side. In this case
-				// it should be considered switching POST retries off.
-				.setDefaultCookieStore(new BasicCookieStore());
-
-		if (proxyHost == null) {
-			httpClientBuilder
-					.useSystemProperties(); // Keeping this for backward plugin compatibility if the  SSC proxy is not used
-			// Among other system properties http(s).proxyHost, http(s).proxyPort httpNonProxyHosts are taken into account
-			// For the complete list see http://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/HttpClientBuilder.html
-		} else {
-//			Credentials proxyCreds = resolveSscProxyCredentials(config, bugzillaProtocol);
-//					, config.get(ProxyField.HTTP_PROXY_PASSWORD.getFieldName()));;
-			Credentials proxyCreds = new UsernamePasswordCredentials(proxyUser, proxyPasswd);
-			if (proxyCreds != null) {
-				credsProvider.setCredentials(new AuthScope(proxyHost.getHostName(), proxyHost.getPort()), proxyCreds);
+		String bugzillaHost = bugzillaDomainHost;
+		if(!bugzillaHost.endsWith("xmlrpc.cgi")) {
+			if(bugzillaHost.endsWith("/")) {
+				bugzillaHost += "xmlrpc.cgi";
+			} else {
+				bugzillaHost += "/xmlrpc.cgi";
 			}
-			httpClientBuilder
-					.setProxy(proxyHost);
 		}
-		return httpClientBuilder.build();
+		return bugzillaHost;
 	}
 
-	private void initializeProxyAuthenticator(final String proxyUser, final String proxyPasswd) {
-		if (proxyUser != null && proxyPasswd != null) {
-			Authenticator.setDefault(
-				new Authenticator() {
-					public PasswordAuthentication getPasswordAuthentication() {
-						return new PasswordAuthentication(
-								proxyUser, proxyPasswd.toCharArray()
-						);
-					}
-				}
-			);
+
+	private URL getBugzillaHostURL (String bugzillaHost)
+			throws ConnectionException {
+
+		URL hostURL;
+		try {
+			hostURL = new URL(bugzillaHost);
+		} catch (MalformedURLException e) {
+			throw new ConnectionException("Bugzilla host URL is malformed; URL supplied was " + bugzillaHost, e);
 		}
+		return hostURL;
 	}
 
 
@@ -338,81 +255,4 @@ public class BugzillaConnector {
 	public void setToken(String t) {
 		token = t;
 	}
-	
-//	/**
-//	 * We need a transport class which will correctly handle cookies set by Bugzilla. This private
-//	 * subclass will appropriately set the Cookie HTTP headers.
-//	 *
-//	 * Cookies are not support by Bugzilla 4.4.3+.
-//	 *
-//	 * @author Tom
-//	 *
-//	 */
-//	private static final class TransportWithCookies extends XmlRpcSun15HttpTransport {
-//
-//		/**
-//		 * A {@code List} of cookies received from the installation, used for authentication
-//		 */
-//		private List<String> cookies = new ArrayList<String>();
-//
-//		/**
-//		 * Creates a new {@link TransportWithCookies} object.
-//		 * @param pClient The {@link XmlRpcClient} that does the heavy lifting.
-//		 */
-//		public TransportWithCookies(XmlRpcClient pClient) {
-//			super(pClient);
-//		}
-//
-//		private URLConnection conn;
-//
-//		@Override
-//		protected URLConnection newURLConnection(URL pURL) throws IOException {
-//            conn = super.newURLConnection(pURL);
-//            return conn;
-//		}
-//
-//		/**
-//		 * This is the meat of these two overrides -- the HTTP header data now includes the
-//		 * cookies received from the Bugzilla installation on login and will pass them every
-//		 * time a connection is made to transmit or receive data.
-//		 */
-//		@Override
-//		protected void initHttpHeaders(XmlRpcRequest request) throws XmlRpcClientException {
-//	        super.initHttpHeaders(request);
-//	        if(cookies.size()>0) {
-//	        	StringBuilder commaSep = new StringBuilder();
-//
-//	        	for(String str : cookies) {
-//	        		commaSep.append(str);
-//	        		commaSep.append(",");
-//	        	}
-//	        	setRequestHeader("Cookie", commaSep.toString());
-//
-//	        }
-//
-//	    }
-//
-//		@Override
-//		protected void close() throws XmlRpcClientException {
-//            getCookies(conn);
-//		}
-//
-//		/**
-//		 * Retrieves cookie values from the HTTP header of Bugzilla responses
-//		 * @param conn
-//		 */
-//		private void getCookies(URLConnection conn) {
-//	    	  if(cookies.size()==0) {
-//	    		  Map<String, List<String>> headers = conn.getHeaderFields();
-//	    		  if(headers.containsKey("Set-Cookie")) {//avoid NPE
-//	    			  List<String> vals = headers.get("Set-Cookie");
-//			    	  for(String str : vals) {
-//			    		  cookies.add(str);
-//			    	  }
-//	    		  }
-//	    	  }
-//
-//	    }
-//
-//	}
 }
