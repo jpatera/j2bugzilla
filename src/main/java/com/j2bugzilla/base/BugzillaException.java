@@ -43,6 +43,7 @@ public class BugzillaException extends Exception {
 	/**
 	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
 	 * @param message A customized error message describing the issue
+	 * @param code The error code of the Bugzilla  procedure call.
 	 * @param cause The nested cause, typically a {@link org.apache.xmlrpc.XmlRpcException XmlRpcException}.
 	 */
 	public BugzillaException(String message, int code, Throwable cause) {

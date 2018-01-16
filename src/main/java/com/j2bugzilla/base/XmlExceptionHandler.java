@@ -15,10 +15,12 @@
  */
 package com.j2bugzilla.base;
 
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.xmlrpc.XmlRpcException;
+import org.apache.xmlrpc.client.XmlRpcHttpTransportException;
 
 /**
  * The {@code XmlExceptionHandler} provides a static utility method for translating
@@ -35,7 +37,6 @@ public final class XmlExceptionHandler {
 	private static final int INVALID_MIME = 601;
 	private static final int ATTACHMENT_TOO_LARGE = 600;
 	private static final int INVALID_USER = 504;
-	private static final int PROXY_AUTH_REQUIRED = 407;
 	private static final int BAD_CREDENTIALS = 300;
 	private static final int MODIFY_PERMISSION_DENIED = 115;
 	private static final int EDIT_PERMISSION_DENIED = 108;
@@ -58,7 +59,8 @@ public final class XmlExceptionHandler {
 	private XmlExceptionHandler() { }
 	
 	private static final Map<Integer, String> FAULT_CODES = new HashMap<Integer, String>();
-	
+	private static final Map<Integer, String> FAULT_STATUSES = new HashMap<Integer, String>();
+
 	static {
 		FAULT_CODES.put(EMPTY_FIELD, "You attempted to set a field as empty which must contain a value");
 		FAULT_CODES.put(INVALID_FIELD_VALUE, "You attempted to supply a field value that is not valid");
@@ -75,13 +77,18 @@ public final class XmlExceptionHandler {
 		FAULT_CODES.put(EDIT_PERMISSION_DENIED, "You do not have permission to edit this bug");
 		FAULT_CODES.put(MODIFY_PERMISSION_DENIED, "You do not have permission to modify this bug");
 		FAULT_CODES.put(INVALID_USER, "An invalid user was specified");
-		FAULT_CODES.put(PROXY_AUTH_REQUIRED, "Proxy authentication failed");
 		FAULT_CODES.put(ATTACHMENT_TOO_LARGE, "The submitted attachment was too large");
 		FAULT_CODES.put(INVALID_MIME, "The MIME type specified was invalid");
 		FAULT_CODES.put(NO_FILE_NAME, "You did not specify a file name");
 		FAULT_CODES.put(NO_FILE_SUMMARY, "You did not specify a file summary");
 		FAULT_CODES.put(NO_FILE_DATA, "You did not specify any file data");
 		FAULT_CODES.put(BAD_CREDENTIALS, "Your credentials are not valid; check the account exists");
+
+		FAULT_STATUSES.put(HttpURLConnection.HTTP_PROXY_AUTH, "Proxy authentication failed for Bugzilla");
+		FAULT_STATUSES.put(HttpURLConnection.HTTP_UNAUTHORIZED, "Server authentication failed for Bugzilla");
+		FAULT_STATUSES.put(HttpURLConnection.HTTP_UNAVAILABLE, "Bugzilla service unavailable");
+		FAULT_STATUSES.put(HttpURLConnection.HTTP_NOT_FOUND, "Bugzilla service not found");
+		FAULT_STATUSES.put(HttpURLConnection.HTTP_CLIENT_TIMEOUT, "Bugzilla request timeout exceeded");
 	}
 
 	/**
@@ -90,12 +97,23 @@ public final class XmlExceptionHandler {
 	 * @return A subclass of {@code BugzillaException}
 	 */
 	public static BugzillaException handleFault(XmlRpcException exception) {
-		
-		String message = FAULT_CODES.get(exception.code);
-		if(message == null) { 
-			message = "An unknown error was encountered; fault code: " + exception.code + " : " + exception.getMessage();
+
+		String message;
+		if (exception instanceof XmlRpcHttpTransportException) {
+			int status = ((XmlRpcHttpTransportException)exception).getStatusCode();
+			message = FAULT_STATUSES.get(status);
+			if(message == null) {
+				message = "Bugzilla transport error was encountered; status code: " + status + " : " + exception.getMessage();
+			}
+			return new BugzillaTransportException(message, status, exception);
+		} else {
+			int code = exception.code;
+			message = FAULT_CODES.get(code);
+			if(message == null) {
+				message = "An unknown Bugzilla error was encountered; fault code: " + code + " : " + exception.getMessage();
+			}
+			return new BugzillaException(message, code, exception);
 		}
-		return new BugzillaException(message, exception.code, exception);
 	}
-	
+
 }
