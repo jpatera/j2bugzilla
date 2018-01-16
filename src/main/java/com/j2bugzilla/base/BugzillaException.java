@@ -26,10 +26,7 @@ public class BugzillaException extends Exception {
 
 	private int code;
 
-	/**
-	 * Eclipse-generated SUID
-	 */
-	private static final long serialVersionUID = -5427986526722263296L;
+	private static final long serialVersionUID = 7496586565330666231L;
 
 	/**
 	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
@@ -43,7 +40,7 @@ public class BugzillaException extends Exception {
 	/**
 	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
 	 * @param message A customized error message describing the issue
-	 * @param code The error code of the Bugzilla  procedure call.
+	 * @param code The error code of the Bugzilla remote procedure call
 	 * @param cause The nested cause, typically a {@link org.apache.xmlrpc.XmlRpcException XmlRpcException}.
 	 */
 	public BugzillaException(String message, int code, Throwable cause) {

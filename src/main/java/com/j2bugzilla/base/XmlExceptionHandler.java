@@ -103,14 +103,14 @@ public final class XmlExceptionHandler {
 			int status = ((XmlRpcHttpTransportException)exception).getStatusCode();
 			message = FAULT_STATUSES.get(status);
 			if(message == null) {
-				message = "Bugzilla transport error was encountered; status code: " + status + " : " + exception.getMessage();
+				message = "An unknown Bugzilla transport error was encountered; status code: " + status + " : " + exception.getMessage();
 			}
 			return new BugzillaTransportException(message, status, exception);
 		} else {
 			int code = exception.code;
 			message = FAULT_CODES.get(code);
 			if(message == null) {
-				message = "An unknown Bugzilla error was encountered; fault code: " + code + " : " + exception.getMessage();
+				message = "An unknown Bugzilla procedure error was encountered; fault code: " + code + " : " + exception.getMessage();
 			}
 			return new BugzillaException(message, code, exception);
 		}
