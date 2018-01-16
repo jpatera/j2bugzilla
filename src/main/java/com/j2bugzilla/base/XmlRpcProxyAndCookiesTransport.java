@@ -31,9 +31,9 @@ import java.util.Map;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * XML-RPC transport implementation for j2bugzilla library, based on the {@link java.net.HttpURLConnection} class.
- * Adds support for the basic proxy authentication.
- * The headers & cookies processing from previous j2bugzilla version is preserved
+ * XML-RPC transport modification for j2bugzilla:
+ *   - preserves the original headers & cookies processing from forked j2bugzilla 2.3.1-SNAPSHOT
+ *   - adds support for the basic proxy authentication.
  *
  * Created by pateraj on 4.1.2018.
  */
@@ -58,10 +58,11 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
     }
 
     /**
-     * Sets optional proxy user and password for proxy authentication.
+     * Sets optional user and password for proxy authentication.
      * Neither {@code proxyUser} nor {@code proxyPassword} should be null, otherwise proxy authentication will not be triggered.
      *
-     * Note: https requests through authenticated proxies are not supported
+     * Note: https requests through authenticated proxies are not supported, see also
+     *       {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransport#newURLConnection(java.net.URL)}.
      *
      * @param proxyUser A plain text proxy user name.
      * @param proxyPassword A plain text proxy password.
@@ -72,8 +73,17 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
     }
 
 
+    /**
+     * Here a Proxy-Authorization header is added if <B>proxy configuration</B> contains proxy authentication credentials.
+     * Unfortunately it does not work in combination with <B>HTTPS</B> Bugzilla requests, because
+     * java.net.HttpURLConnection which is used for transport by XML-RPC library requires for the proxy authentication
+     * the java Authenticator to be set up.
+     * <BR>
+     * As plugin is not an optimal place for setting Authenticator the combination mentioned above is not supported
+     * and will throw a corresponding BugzillaException.
+     */
     @Override
-    protected URLConnection newURLConnection(URL url) throws IOException {
+    protected URLConnection newURLConnection(final URL url) throws IOException {
 
         urlConn = super.newURLConnection(url);
         if ((getProxy() != null) && (proxyUser != null) && (proxyPassword != null)) {
@@ -85,12 +95,11 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
 
 
     /**
-     * This is the meat of these two overrides -- the HTTP header data now includes the
-     * cookies received from the Bugzilla installation on login and will pass them every
-     * time a connection is made to transmit or receive data.
+     * The HTTP header data now includes the cookies received from the Bugzilla installation on login
+     * and will pass them every time a connection is made to transmit or receive data.
      */
     @Override
-    protected void initHttpHeaders(XmlRpcRequest request) throws XmlRpcClientException {
+    protected void initHttpHeaders(final XmlRpcRequest request) throws XmlRpcClientException {
 
         super.initHttpHeaders(request);
         if(cookies.size() > 0) {
@@ -115,7 +124,7 @@ public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
      * Retrieves cookie values from the HTTP header of Bugzilla responses
      * @param conn URL connection with the Bugzilla cookies
      */
-    private void getCookies(URLConnection conn) {
+    private void getCookies(final URLConnection conn) {
 
         if(cookies.size()==0) {
             Map<String, List<String>> headers = conn.getHeaderFields();
