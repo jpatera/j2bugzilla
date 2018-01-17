@@ -110,9 +110,9 @@ public final class XmlExceptionHandler {
 			int code = exception.code;
 			message = FAULT_CODES.get(code);
 			if(message == null) {
-				message = "An unknown Bugzilla procedure error was encountered; fault code: " + code + " : " + exception.getMessage();
+				message = "An unknown Bugzilla method call error was encountered; fault code: " + code + " : " + exception.getMessage();
 			}
-			return new BugzillaException(message, code, exception);
+			return new BugzillaException(message, exception);
 		}
 	}
 
