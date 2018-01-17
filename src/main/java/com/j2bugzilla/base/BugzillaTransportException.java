@@ -1,6 +1,4 @@
 /*
- * Copyright 2018 Jan Patera
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,16 +17,18 @@ package com.j2bugzilla.base;
  * <code>BugzillaTransportException</code> is thrown if the exception received from XML-RPC request is of type XmlRpcTransportException.
  * It can have many reasons (authentication, timeout, wrong URL, ...), for the concrete XML-RPC transport error
  * processing see {@link XmlExceptionHandler#handleFault(org.apache.xmlrpc.XmlRpcException)} .
+ * <BR> A new {@code status} field keeping an http response code has been added to enable a later specific error identification.
  * <P>
- * This exception always indicates that that further subsequent Bugzilla remote procedure calls will fail.
+ * This exception always indicates that further subsequent Bugzilla remote procedure calls will fail.
  * <P>
- * BugzillaTransportException extends BugzillaException. It would be better for both to implement a common interface instead,
- * but I did not want to change the current j2bugzilla API so implemented it this way.
+ * <i>Note: BugzillaTransportException extends BugzillaException. It would be better for both classes to implement a common interface instead,
+ * but for keeping it more backward compatible it was implemented this way.</i>
  * <P>
  * BugzillaTransportException will always be a wrapper for a nested <code>Exception</code> which
  * indicates the cause of the error.
- * @author Jan Patera
- *
+ * <BR>
+ * @author Jan Patera, MicroFocus
+ * @created 4.1.2018.
  */
 public class BugzillaTransportException extends BugzillaException {
 

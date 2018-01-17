@@ -1,6 +1,4 @@
 /*
- * Copyright 2018 Jan Patera
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,12 +21,18 @@ import org.apache.xmlrpc.client.XmlRpcTransport;
 import java.net.Proxy;
 
 /**
- * Created by pateraj on 4.1.2018.
+ * A custom XML-RPC transport derived from the original j2buzilla enhanced by a possibility to use http proxy.<BR>
+ * Cooperates with {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransport}<BR>
+ * Replaces previous similar j2bugzilla anonymous and static factory and transport from {@link com.j2bugzilla.base.BugzillaConnector)
+ * <BR>
+ * @author Jan Patera, MicroFocus
+ * @created 4.1.2018.
  */
 public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransportFactory {
-    private Proxy proxy;
-    private String proxyUser;
-    private String proxyPassword;
+
+    private Proxy proxy;            // Proxy to be used for communication with Bugzilla
+    private String proxyUser;       // Optional proxy user if proxy requires basic authentication
+    private String proxyPassword;   // Password for proxy authentication
 
 
     public XmlRpcProxyAndCookiesTransportFactory(XmlRpcClient client) {
@@ -37,8 +41,8 @@ public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransp
 
 
     /**
-     * Saves proxy in this class because the parent XmlRpcSun15HttpTransportFactory
-     * does not have a public method getProxy() for a later usage.
+     * Saves proxy in this factory instance because the parent XmlRpcSun15HttpTransportFactory
+     * does not have a public method getProxy() for a later retrieval.
      * @param proxy proxy server for Bugzilla
      */
     @Override

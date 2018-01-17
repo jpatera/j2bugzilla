@@ -33,8 +33,15 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 /**
  * The {@code BugzillaConnector} class handles all access to a given Bugzilla installation.
  * The Bugzilla API uses XML-RPC, implemented via the Apache XML-RPC library in this instance.
+ * <P>
+ * A possibility to use a http proxy has been added to the BugzillaConnector 2.3.1-SNAPSHOT .
+ * <BR>Two new classes {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransportFactory}
+ * and {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransport} added.
+ * <BR>Error processing has been enhanced and improved (a new {@link com.j2bugzilla.base.BugzillaTransportException} introduced)
+ *
  * @author Tom
- * 
+ * @modifier Jan Patera
+ *
  * @see <a href="http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService.html">WebService</a>
  * @see <a href="http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/Server/XMLRPC.html">XML-RPC</a>
  *

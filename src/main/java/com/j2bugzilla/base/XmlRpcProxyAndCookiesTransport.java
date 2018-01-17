@@ -1,6 +1,4 @@
 /*
- * Copyright 2018 Jan Patera
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,7 +33,9 @@ import javax.xml.bind.DatatypeConverter;
  * <LI> - preserves the original headers & cookies processing from forked j2bugzilla 2.3.1-SNAPSHOT</LI>
  * <LI> - adds support for the basic proxy authentication</LI>
  * <BR>
- * Created by pateraj on 4.1.2018.
+ * @author Jan Patera, MicroFocus
+ * @created 4.1.2018.
+ *
  */
 public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
 

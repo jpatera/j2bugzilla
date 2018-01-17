@@ -24,7 +24,7 @@ package com.j2bugzilla.base;
  */
 public class BugzillaException extends Exception {
 
-	private int code;
+//	private int code;
 
 	private static final long serialVersionUID = 7496586565330666231L;
 
@@ -37,16 +37,16 @@ public class BugzillaException extends Exception {
 		super(message, cause);
 	}
 
-	/**
-	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
-	 * @param message A customized error message describing the issue
-	 * @param code The error code of the Bugzilla remote procedure call
-	 * @param cause The nested cause, typically a {@link org.apache.xmlrpc.XmlRpcException XmlRpcException}.
-	 */
-	public BugzillaException(String message, int code, Throwable cause) {
-		super(message, cause);
-		this.code = code;
-	}
+//	/**
+//	 * Constructs a new {@link BugzillaException} with the specified summary and cause.
+//	 * @param message A customized error message describing the issue
+//	 * @param code The error code of the Bugzilla remote procedure call
+//	 * @param cause The nested cause, typically a {@link org.apache.xmlrpc.XmlRpcException XmlRpcException}.
+//	 */
+//	public BugzillaException(String message, int code, Throwable cause) {
+//		super(message, cause);
+////		this.code = code;
+//	}
 
 	/**
 	 * Constructs a new {@link BugzillaException} with the specified summary
@@ -57,7 +57,7 @@ public class BugzillaException extends Exception {
 	}
 
 
-	public int getCode() {
-		return code;
-	}
+//	public int getCode() {
+//		return code;
+//	}
 }
