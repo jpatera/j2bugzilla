@@ -30,12 +30,13 @@ import javax.xml.bind.DatatypeConverter;
 
 /**
  * XML-RPC transport modification for j2bugzilla:
- * <LI> - preserves the original headers & cookies processing from forked j2bugzilla 2.3.1-SNAPSHOT</LI>
- * <LI> - adds support for the basic proxy authentication</LI>
+ * <UL>
+ * <LI> preserves the original headers and cookies processing from forked j2bugzilla 2.3.1-SNAPSHOT</LI>
+ * <LI> adds support for the basic proxy authentication</LI>
+ * </UL>
  * <BR>
+ * Created 4.1.2018.
  * @author Jan Patera, MicroFocus
- * @created 4.1.2018.
- *
  */
 public class XmlRpcProxyAndCookiesTransport extends XmlRpcSun15HttpTransport {
 

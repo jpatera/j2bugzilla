@@ -23,10 +23,10 @@ import java.net.Proxy;
 /**
  * A custom XML-RPC transport derived from the original j2buzilla enhanced by a possibility to use http proxy.<BR>
  * Cooperates with {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransport}<BR>
- * Replaces previous similar j2bugzilla anonymous and static factory and transport from {@link com.j2bugzilla.base.BugzillaConnector)
+ * Replaces previous similar j2bugzilla anonymous and static factory and transport from {@link com.j2bugzilla.base.BugzillaConnector}
  * <BR>
+ * Created 4.1.2018.
  * @author Jan Patera, MicroFocus
- * @created 4.1.2018.
  */
 public class XmlRpcProxyAndCookiesTransportFactory extends XmlRpcSun15HttpTransportFactory {
 

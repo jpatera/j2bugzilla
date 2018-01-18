@@ -39,8 +39,9 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
  * and {@link com.j2bugzilla.base.XmlRpcProxyAndCookiesTransport} added.
  * <BR>Error processing has been enhanced and improved (a new {@link com.j2bugzilla.base.BugzillaTransportException} introduced)
  *
+ * Modified by: Jan Patera
+ *
  * @author Tom
- * @modifier Jan Patera
  *
  * @see <a href="http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService.html">WebService</a>
  * @see <a href="http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/Server/XMLRPC.html">XML-RPC</a>

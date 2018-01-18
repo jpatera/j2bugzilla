@@ -27,8 +27,8 @@ package com.j2bugzilla.base;
  * BugzillaTransportException will always be a wrapper for a nested <code>Exception</code> which
  * indicates the cause of the error.
  * <BR>
+ * Created 4.1.2018.
  * @author Jan Patera, MicroFocus
- * @created 4.1.2018.
  */
 public class BugzillaTransportException extends BugzillaException {
 
