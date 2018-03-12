@@ -1,0 +1,56 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'idea'
+
+group = 'com.j2bugzilla'
+version = '2.3.2'
+
+description = """J2Bugzilla"""
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+
+
+repositories {
+        
+     maven { url "http://repo.maven.apache.org/maven2" }
+}
+dependencies {
+    compile group: 'org.apache.xmlrpc', name: 'xmlrpc-client', version:'3.1.3'
+    testCompile group: 'org.mockito', name: 'mockito-core', version:'1.9.0'
+    testCompile group: 'junit', name: 'junit', version:'4.10'
+    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version:'1.3'
+}
+
+ext.sharedManifest = manifest {
+    attributes 'Implementation-Title': 'Forked j2bugzilla enhanced with a proxy support',
+               'Implementation-Version': version,
+               'Built-By': 'Gradle',
+               'Build-Time': new Date().format("yyyy-MM-dd HH:mm:ss")
+    }
+
+jar {
+    manifest = project.manifest {
+        from sharedManifest
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    manifest = project.manifest {
+        from sharedManifest
+    }
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    manifest = project.manifest {
+        from sharedManifest
+    }
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
